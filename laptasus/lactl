@@ -1,0 +1,71 @@
+#!/bin/sh
+
+
+PROG=$0
+
+usage () {
+    printf "$PROG\n";
+}
+
+exit_usage() {
+    usage;
+    exit $1;
+}
+
+
+[ $# -gt 0 ] && [ $# -lt 4 ] || exit_usage ;
+
+ACTION=$1
+VALUE=$2
+
+
+start () {
+    printf "in start\n"
+
+    pipe=/tmp/msgpipe
+    trap "rm -f $pipe" EXIT
+    if [[ ! -p $pipe ]]; then
+        mkfifo $pipe
+    fi
+
+
+    while true
+    do
+        if read line <$pipe; then
+            if [[ "$line" == quit ]]; then
+                break
+            elif [[ "$line" == "kbd::led::up" ]]; then
+                echo "LED UP";
+                /etc/acpi/asus-keyboard-backlight.sh up;
+
+            elif [[ "$line" == "kbd::led::down" ]]; then
+                echo "LED down";
+                /etc/acpi/asus-keyboard-backlight.sh down
+            fi
+        fi
+    done
+}
+
+stop () {
+    printf "in stop\n"
+}
+
+unhandled () {
+    printf "unhandled\n"
+}
+
+
+case $ACTION in
+    start)
+        printf "Starting...\n";
+        start;
+        ;;
+    stop)
+        printf "Stopping...\n";
+        stop;
+        ;;
+    *)
+        printf "Not responded action.\n";
+        unhandled;
+        ;;
+esac
