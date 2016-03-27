@@ -19,6 +19,18 @@ ACTION=$1
 VALUE=$2
 
 
+split-left () {
+    echo $1 | awk 'BEGIN{FS=$2} {print $1}'
+}
+
+
+discover-and-load () {
+    printf "$@\n"
+    . ~/proj/laptasus/laptasus/plugins/la-keyboard-backlight
+    return 0
+}
+
+
 start () {
     printf "in start\n"
 
@@ -29,18 +41,22 @@ start () {
     fi
 
 
+
     while true
     do
         if read line <$pipe; then
             if [[ "$line" == quit ]]; then
                 break
-            elif [[ "$line" == "kbd::led::up" ]]; then
-                echo "LED UP";
-                /etc/acpi/asus-keyboard-backlight.sh up;
+            else
+                SUBSYSTEM=$(echo $line | awk 'BEGIN{FS="::"} {print $1}')
+                ARGS=$(echo $line | awk 'BEGIN{FS="::"} {print $2}')
 
-            elif [[ "$line" == "kbd::led::down" ]]; then
-                echo "LED down";
-                /etc/acpi/asus-keyboard-backlight.sh down
+                discover-and-load $SUBSYSTEM
+                [ $? -gt 0 ] && continue
+                plugin-validate-args $ARGS
+                plugin-do $ARGS
+
+
             fi
         fi
     done
