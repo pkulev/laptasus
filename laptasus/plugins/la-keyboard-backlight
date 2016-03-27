@@ -11,31 +11,6 @@
 
 SUBSYSTEM=kbacl
 
-test-plugin-do () {
-	# this directory is a symlink on my machine:
-	KEYS_DIR=/sys/class/leds/asus\:\:kbd_backlight
-
-	test -d $KEYS_DIR || exit 0
-
-	MIN=0
-	MAX=$(cat $KEYS_DIR/max_brightness)
-	VAL=$(cat $KEYS_DIR/brightness)
-
-	if [ "$1" = down ]; then
-		VAL=$((VAL-1))
-	else
-		VAL=$((VAL+1))
-	fi
-
-	if [ "$VAL" -lt $MIN ]; then
-		VAL=$MIN
-	elif [ "$VAL" -gt $MAX ]; then
-		VAL=$MAX
-	fi
-
-	echo $VAL > $KEYS_DIR/brightness
-}
-
 slog () {
 	printf "[`date +%d/%m/%Y\ %H:%M:%S`] $SUBSYSTEM: $@\n"
 }
@@ -51,5 +26,28 @@ plugin-validate-args () {
 }
 
 plugin-do () {
-	slog "doing $@"
+	local KEYS_DIR=/sys/class/leds/asus\:\:kbd_backlight
+
+	test -d $KEYS_DIR || exit 0
+
+	local MIN=0
+	local MAX=$(cat $KEYS_DIR/max_brightness)
+	local VAL=$(cat $KEYS_DIR/brightness)
+
+	case $1 in
+		up)
+			VAL=$((VAL+1))
+			;;
+		down)
+			VAL=$((VAL-1))
+			;;
+		off)
+			VAL=0
+			;;
+	esac
+
+	[ $VAL -lt $MIN ] && VAL=$MIN
+	[ $VAL -gt $MAX ] && VAL=$MAX
+
+	echo $VAL > $KEYS_DIR/brightness
 }

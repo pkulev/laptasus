@@ -28,22 +28,15 @@ Exit statuses:
     1 if serious trouble.
 EOF
 
-    if [ ! -z "$1" ]; then
-        exit $1
-    fi
-    exit 0
+    [ ! -z "$1" ] && exit $1 || exit 0
 }
-
 
 [ $# == 1 ] || usage 1
 [ $1 == "-h" ] || [ $1 == "--help" ] && usage
 
-ACTION=$1
-
 log () {
     printf "[`date +%d/%m/%Y\ %H:%M:%S`] $PROG: $@\n"
 }
-
 
 discover-and-load () {
     log $@
@@ -51,12 +44,11 @@ discover-and-load () {
     return 0
 }
 
-
 start () {
     pipe=/tmp/msgpipe
     trap "rm -f $pipe" EXIT
     if [[ ! -p $pipe ]]; then
-        mkfifo $pipe
+        mkfifo -m 0422 $pipe
     fi
 
     while true
@@ -79,27 +71,25 @@ start () {
     done
 }
 
-pstop () {
+stop () {
     return 0
 }
 
 unhandled () {
-    log "Caught request to unknown substystem"
-    log "Subsystem: $SUBSYSTEM"
+    log "Caught request to unknown substystem: $SUBSYSTEM"
     log "args: $ARGS"
 }
 
-
-case $ACTION in
+case $1 in
     start)
-        printf "Starting...\n";
-        start;
+        printf "Starting...\n"
+        start
         ;;
     stop)
-        printf "Stopping...\n";
-        stop;
+        printf "Stopping...\n"
+        stop
         ;;
     *)
-        unhandled;
+        unhandled
         ;;
 esac
