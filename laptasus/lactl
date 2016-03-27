@@ -1,46 +1,63 @@
-#!/bin/sh
+#!/bin/bash
 
 
-PROG=$0
+# laptasus - ASUS laptop tools (backlight, keyboard backlight and etc.)
+# Pavel Kulyov <kulyov.pavel@gmail.com>, 2016
+
+# TODO: parse and pass args to plugin
+# TODO: implement safe discover-and-load function to load plugin
+
+
+PROG="${0##*/}"
+PLUGDIR=/home/most/proj/laptasus/laptasus/plugins
 
 usage () {
-    printf "$PROG\n";
+    cat << EOF
+
+Usage: $PROG {start|stop}
+ASUS laptop tools daemon.
+Dispatches requests from pipe to appropriate plugin (handler).
+
+Arguments:
+    -h, --help    print this help message
+    start         start the daemon
+    stop          stop the daemon
+
+Exit statuses:
+    0 if Ok,
+    1 if serious trouble.
+EOF
+
+    if [ ! -z "$1" ]; then
+        exit $1
+    fi
+    exit 0
 }
 
-exit_usage() {
-    usage;
-    exit $1;
-}
 
-
-[ $# -gt 0 ] && [ $# -lt 4 ] || exit_usage ;
+[ $# == 1 ] || usage 1
+[ $1 == "-h" ] || [ $1 == "--help" ] && usage
 
 ACTION=$1
-VALUE=$2
 
-
-split-left () {
-    echo $1 | awk 'BEGIN{FS=$2} {print $1}'
+log () {
+    printf "[`date +%d/%m/%Y\ %H:%M:%S`] $PROG: $@\n"
 }
 
 
 discover-and-load () {
-    printf "$@\n"
-    . ~/proj/laptasus/laptasus/plugins/la-keyboard-backlight
+    log $@
+    . $PLUGDIR/la-keyboard-backlight
     return 0
 }
 
 
 start () {
-    printf "in start\n"
-
     pipe=/tmp/msgpipe
     trap "rm -f $pipe" EXIT
     if [[ ! -p $pipe ]]; then
         mkfifo $pipe
     fi
-
-
 
     while true
     do
@@ -54,7 +71,7 @@ start () {
                 discover-and-load $SUBSYSTEM
                 [ $? -gt 0 ] && continue
                 plugin-validate-args $ARGS
-                plugin-do $ARGS
+                [ $? == 0 ] && plugin-do $ARGS
 
 
             fi
@@ -62,12 +79,14 @@ start () {
     done
 }
 
-stop () {
-    printf "in stop\n"
+pstop () {
+    return 0
 }
 
 unhandled () {
-    printf "unhandled\n"
+    log "Caught request to unknown substystem"
+    log "Subsystem: $SUBSYSTEM"
+    log "args: $ARGS"
 }
 
 
@@ -81,7 +100,6 @@ case $ACTION in
         stop;
         ;;
     *)
-        printf "Not responded action.\n";
         unhandled;
         ;;
 esac

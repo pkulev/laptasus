@@ -1,9 +1,11 @@
-#!/bin/sh
+#!/bin/bash
 
 
 # laptasus - ASUS laptop tools (backlight, keyboard backlight and etc.)
 # la-plugin - keyboard backlight controller
+# arguments - {up|down|off}
 # Pavel Kulyov <kulyov.pavel@gmail.com>, 2016
+
 
 # TODO: use lactl config.d to store KEYS_DIR
 
@@ -34,11 +36,20 @@ test-plugin-do () {
 	echo $VAL > $KEYS_DIR/brightness
 }
 
+slog () {
+	printf "[`date +%d/%m/%Y\ %H:%M:%S`] $SUBSYSTEM: $@\n"
+}
+
 plugin-validate-args () {
-	printf "$SUBSYSTEM: got args ($@)\n"
-	printf "$0 || $1 || $2\n"
+	slog "got args ($@)"
+	[ $# == 1 ] && {
+		[ $1 == "up" ] ||
+		[ $1 == "down" ] ||
+		[ $1 == "off" ]
+	} || return 1
+	return 0
 }
 
 plugin-do () {
-	printf "hello from $SUBSYSTEM with $@"
+	slog "doing $@"
 }
