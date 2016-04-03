@@ -7,8 +7,8 @@ PACKAGE = $(PROJ)-$(VERSION)
 
 # Standard GNU variables
 SHELL       ?= /bin/sh
-prefix      ?= $(DESTDIR)/usr/local
-exec_prefix ?= $(prefix)
+prefix      ?= $(DESTDIR)
+exec_prefix ?= $(prefix)/usr
 bindir      ?= $(exec_prefix)/bin
 sysconfdir  ?= $(prefix)/etc
 

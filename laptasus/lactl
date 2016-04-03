@@ -9,7 +9,15 @@
 
 
 PROG="${0##*/}"
-PLUGDIR=/home/most/proj/laptasus/laptasus/plugins
+
+# Redefines by config
+PLUGDIR=/etc/laptasus/plugins
+CONF_GLOBAL=/etc/laptasus/config
+CONF_LOCAL=../etc/laptasus/config
+
+[ -f $CONF_GLOBAL ] && . $CONF_GLOBAL || {
+        [ -f $CONF_LOCAL ] && . $CONF_LOCAL
+        } || echo "No configuration file found."
 
 usage() {
     cat << EOF
