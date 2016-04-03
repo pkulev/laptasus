@@ -11,7 +11,7 @@
 PROG="${0##*/}"
 PLUGDIR=/home/most/proj/laptasus/laptasus/plugins
 
-usage () {
+usage() {
     cat << EOF
 
 Usage: $PROG {start|stop}
@@ -34,17 +34,22 @@ EOF
 [ $# == 1 ] || usage 1
 [ $1 == "-h" ] || [ $1 == "--help" ] && usage
 
-log () {
+log() {
     printf "[`date +%d/%m/%Y\ %H:%M:%S`] $PROG: $@\n"
 }
 
-discover-and-load () {
+unhandled() {
+    log "Caught request to unknown substystem: $SUBSYSTEM"
+    log "args: $ARGS"
+}
+
+discover-and-load() {
     log $@
     . $PLUGDIR/la-keyboard-backlight
     return 0
 }
 
-start () {
+start() {
     pipe=/tmp/msgpipe
     trap "rm -f $pipe" EXIT
     if [[ ! -p $pipe ]]; then
@@ -71,14 +76,10 @@ start () {
     done
 }
 
-stop () {
+stop() {
     return 0
 }
 
-unhandled () {
-    log "Caught request to unknown substystem: $SUBSYSTEM"
-    log "args: $ARGS"
-}
 
 case $1 in
     start)
@@ -88,8 +89,5 @@ case $1 in
     stop)
         printf "Stopping...\n"
         stop
-        ;;
-    *)
-        unhandled
         ;;
 esac
