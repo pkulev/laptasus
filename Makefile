@@ -1,6 +1,8 @@
 # laptasus - ASUS laptop tools (backlight, keyboard backlight and etc.)
 # Pavel Kulyov <kulyov.pavel@gmail.com>, 2016
 
+# TODO: add plugin library installation
+
 PROJ = laptasus
 VERSION = 0.1
 PACKAGE = $(PROJ)-$(VERSION)
@@ -12,10 +14,15 @@ exec_prefix ?= $(prefix)/usr
 bindir      ?= $(exec_prefix)/bin
 sysconfdir  ?= $(prefix)/etc
 
-# Specific variables
+# Specific source variables
+INITNAME     = $(PROJ)
+INITSCRIPT   = $(PROJ)/$(INITNAME)
 CONFIG       = $(PROJ)/config
-CONFDIR      = $(sysconfdir)/$(PROJ)
 PLUGDIR      = $(CONFDIR)/plugins
+
+# Specific installation variables
+CONFDIR      = $(sysconfdir)/$(PROJ)
+ELIBDIR      = $(libexecdir)/$(PROJ)
 
 DISTFILES =      \
 	$(PROJ)/     \
@@ -26,12 +33,18 @@ DISTFILES =      \
 PLUGINFILES = $(shell find $(PROJ)/plugins -name "la-*")
 
 
-all: $(CONFIG)
+all: $(CONFIG) $(INITSCRIPT)
 
 $(CONFIG):
 	@echo "Generating default $(PROJ) configuration..."
 	@cp -uv $(PROJ)/config.in $(CONFIG)
 	@sed -i -s "s,%PLUGDIR%,$(PLUGDIR)," $(CONFIG)
+
+$(INITSCRIPT):
+	@echo "Generating OpenRC init script..."
+	@cp -uv $(INITSCRIPT).in $(INITSCRIPT)
+	@sed -i -s "s,%PROJ%,lactl," $(INITSCRIPT)
+	@sed -i -s "s,%BINDIR%,$(bindir)," $(INITSCRIPT)
 
 dist: clean
 	@echo "Creating dist tarball:"
@@ -46,7 +59,9 @@ install: $(CONFIG) installdirs
 	@echo "Installing $(PACKAGE):"
 	@echo "Binary: $(bindir)"
 	@echo "Config: $(CONFDIR)"
+	@echo "Libexec: $(ELIBDIR)"
 	@cp -uv $(PROJ)/lactl $(bindir)
+	@cp -uv $(INITSCRIPT) $(sysconfdir)/init.d
 	@cp  -v $(CONFIG) $(CONFDIR)
 	@cp -uRv $(PLUGINFILES) $(PLUGDIR)
 
@@ -56,10 +71,11 @@ installdirs:
 uninstall:
 	@echo "Uninstalling $(PACKAGE):"
 	@rm -fv  $(bindir)/lactl
+	@rm -fv  $(sysconfdir)/init.d/$(INITNAME)
 	@rm -rfv $(CONFDIR)
 	@echo "$(PACKAGE) uninstalled."
 
 clean:
-	@rm -rfv $(PACKAGE) $(CONFIG)
+	@rm -rfv $(PACKAGE) $(CONFIG) $(INITSCRIPT)
 
 .PHONY: dist install installdirs uninstall clean
