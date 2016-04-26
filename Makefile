@@ -13,6 +13,7 @@ prefix      ?= $(DESTDIR)
 exec_prefix ?= $(prefix)/usr
 bindir      ?= $(exec_prefix)/bin
 sysconfdir  ?= $(prefix)/etc
+libexecdir  ?= $(exec_prefix)/libexec
 
 # Specific source variables
 INITNAME     = $(PROJ)
@@ -64,15 +65,17 @@ install: $(CONFIG) installdirs
 	@cp -uv $(INITSCRIPT) $(sysconfdir)/init.d
 	@cp  -v $(CONFIG) $(CONFDIR)
 	@cp -uRv $(PLUGINFILES) $(PLUGDIR)
+#   Add library installation
 
 installdirs:
-	@mkdir -pv $(bindir) $(PLUGDIR)
+	@mkdir -pv $(bindir) $(PLUGDIR) $(ELIBDIR)
 
 uninstall:
 	@echo "Uninstalling $(PACKAGE):"
 	@rm -fv  $(bindir)/lactl
 	@rm -fv  $(sysconfdir)/init.d/$(INITNAME)
 	@rm -rfv $(CONFDIR)
+	@rm -rfv $(ELIBDIR)
 	@echo "$(PACKAGE) uninstalled."
 
 clean:
