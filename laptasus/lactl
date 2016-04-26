@@ -1,17 +1,20 @@
 #!/bin/bash
 
-
 # laptasus - ASUS laptop tools (backlight, keyboard backlight and etc.)
 # Pavel Kulyov <kulyov.pavel@gmail.com>, 2016
 
 # TODO: parse and pass args to plugin
 # TODO: implement safe discover-and-load function to load plugin
-
+# TODO: move out pipe path to config
+# TODO: use /tmp to parse config for the basic eval safety
 
 PROG="${0##*/}"
 
+
 # Redefines by config
-PLUGDIR=/etc/laptasus/plugins
+PIPE=/tmp/lapipe
+PLUGDIR=/home/most/tmp/etc/laptasus/plugins
+
 CONF_GLOBAL=/etc/laptasus/config
 CONF_LOCAL=../etc/laptasus/config
 
@@ -19,28 +22,7 @@ CONF_LOCAL=../etc/laptasus/config
         [ -f $CONF_LOCAL ] && . $CONF_LOCAL
         } || echo "No configuration file found."
 
-usage() {
-    cat << EOF
-
-Usage: $PROG {start|stop}
-ASUS laptop tools daemon.
-Dispatches requests from pipe to appropriate plugin (handler).
-
-Arguments:
-    -h, --help    print this help message
-    start         start the daemon
-    stop          stop the daemon
-
-Exit statuses:
-    0 if Ok,
-    1 if serious trouble.
-EOF
-
-    [ ! -z "$1" ] && exit $1 || exit 0
-}
-
-[ $# == 1 ] || usage 1
-[ $1 == "-h" ] || [ $1 == "--help" ] && usage
+PLUGINS=($PLUGDIR/la-*)
 
 log() {
     printf "[`date +%d/%m/%Y\ %H:%M:%S`] $PROG: $@\n"
@@ -53,49 +35,49 @@ unhandled() {
 
 discover-and-load() {
     log $@
-    . $PLUGDIR/la-keyboard-backlight
-    return 0
+    for plugin in "${PLUGINS[@]}";
+    do
+        [ $SUBSYSTEM == $1 ] && . $plugin && return 0
+    done
+
+    return 1
 }
 
-start() {
-    pipe=/tmp/msgpipe
-    trap "rm -f $pipe" EXIT
-    if [[ ! -p $pipe ]]; then
-        mkfifo -m 0422 $pipe
+loop() {
+    trap "rm -f $PIPE" EXIT
+    if [[ -p $PIPE ]]; then
+        log "Looks like another instance of $PROG is working."
+        exit 1
+    else
+        mkfifo -m 0422 $PIPE
     fi
 
     while true
     do
-        if read line <$pipe; then
-            if [[ "$line" == quit ]]; then
-                break
-            else
-                SUBSYSTEM=$(echo $line | awk 'BEGIN{FS="::"} {print $1}')
-                ARGS=$(echo $line | awk 'BEGIN{FS="::"} {print $2}')
+        if read line <$PIPE; then
+            [ "$line" == "lactl::quit" ] && break
 
-                discover-and-load $SUBSYSTEM
-                [ $? -gt 0 ] && continue
-                plugin-validate-args $ARGS
-                [ $? == 0 ] && plugin-do $ARGS
+            SUBSYSTEM=$(echo $line | awk 'BEGIN{FS="::"} {print $1}')
+            ARGS=$(echo $line | awk 'BEGIN{FS="::"} {print $2}')
 
-
-            fi
+            discover-and-load $SUBSYSTEM
+            [ $? -gt 0 ] && continue
+            plugin-validate-args $ARGS
+            [ $? == 0 ] && plugin-do $ARGS
         fi
     done
 }
 
-stop() {
-    return 0
-}
-
-
 case $1 in
     start)
-        printf "Starting...\n"
-        start
+        loop
         ;;
     stop)
-        printf "Stopping...\n"
-        stop
+        [ -p $PIPE ] && echo "lactl::quit" > $PIPE
+        exit 0
+        ;;
+    *)
+        log "Unknown action $1"
+        exit 1
         ;;
 esac
