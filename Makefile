@@ -23,6 +23,7 @@ PLUGDIR      = $(CONFDIR)/plugins
 # Specific installation variables
 CONFDIR      = $(sysconfdir)/$(PROJ)
 ELIBDIR      = $(libexecdir)/$(PROJ)
+INITDIR      = $(sysconfdir)/init.d
 
 DISTFILES =      \
 	$(PROJ)/     \
@@ -45,6 +46,7 @@ $(INITSCRIPT):
 	@cp -uv $(INITSCRIPT).in $(INITSCRIPT)
 	@sed -i -s "s,%PROJ%,lactl," $(INITSCRIPT)
 	@sed -i -s "s,%BINDIR%,$(bindir)," $(INITSCRIPT)
+	@chmod +x $(INITSCRIPT)
 
 dist: clean
 	@echo "Creating dist tarball:"
@@ -61,17 +63,17 @@ install: $(CONFIG) installdirs
 	@echo "Config: $(CONFDIR)"
 	@echo "Libexec: $(ELIBDIR)"
 	@cp -uv $(PROJ)/lactl $(bindir)
-	@cp -uv $(INITSCRIPT) $(sysconfdir)/init.d
+	@cp -uv $(INITSCRIPT) $(INITDIR)
 	@cp  -v $(CONFIG) $(CONFDIR)
 	@cp -uRv $(PLUGINFILES) $(PLUGDIR)
 
 installdirs:
-	@mkdir -pv $(bindir) $(PLUGDIR)
+	@mkdir -pv $(bindir) $(PLUGDIR) $(INITDIR)
 
 uninstall:
 	@echo "Uninstalling $(PACKAGE):"
 	@rm -fv  $(bindir)/lactl
-	@rm -fv  $(sysconfdir)/init.d/$(INITNAME)
+	@rm -fv  $(INITDIR)/$(INITNAME)
 	@rm -rfv $(CONFDIR)
 	@echo "$(PACKAGE) uninstalled."
 
