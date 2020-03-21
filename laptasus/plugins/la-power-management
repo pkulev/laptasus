@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# la-plugin - power management controller
+# arguments - {hibernate|suspend}
+# Pavel Kulyov <kulyov.pavel@gmail.com>, 2020
+
+
+SUBSYSTEM=pmctl
+
+slog() {
+    printf "[`date +%d/%m/%Y\ %H:%M:%S`] $SUBSYSTEM: $@\n"
+}
+
+plugin-validate-args() {
+    slog "got args ($@)"
+    [ $# == 1 ] && {
+        [ $1 == "suspend" ] ||
+        [ $1 == "hibernate" ]
+    } || return 1
+    return 0
+}
+
+plugin-do () {
+    case $1 in
+        suspend)
+            pm-suspend
+            ;;
+        hibernate)
+            pm-hibernate
+            ;;
+    esac
+}
